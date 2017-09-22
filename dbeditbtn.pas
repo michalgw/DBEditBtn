@@ -16,6 +16,7 @@ type
     FDataLink: TFieldDataLink;
     FCustomEditMask: Boolean;
     FFocusedDisplay: boolean;
+    FKillFocus: Boolean;
     procedure DataChange(Sender: TObject);
     procedure UpdateData(Sender: TObject);
     function GetDataField: string;
@@ -432,7 +433,8 @@ begin
   //need to override this to make sure the datalink gets notified
   //its been modified, then when post etc, it will call
   //updatedata to update the field data with current value
-  FDataLink.Modified;
+  if not FKillFocus then
+    FDataLink.Modified;
 
   inherited Change;
 end;
@@ -467,10 +469,6 @@ begin
   inherited WMSetFocus(Message);
 end;
 
-type
-  TEbFieldDataLink = class(TFieldDataLink)
-  end;
-
 procedure TDBEbEdit.WMKillFocus(var Message: TLMKillFocus);
 begin
   inherited WMKillFocus(Message);
@@ -484,9 +482,11 @@ begin
     //inside events propagated by WMKillFocus or UpdateRecord
     if not Focused then
     begin
+      FKillFocus := True;
       DisableMask(FDataLink.Field.DisplayText);
-      //reset the modified flag that is changed after setting the text
-      TEbFieldDataLink(FDataLink).IsModified := False;
+      ////reset the modified flag that is changed after setting the text
+      //TEbFieldDataLink(FDataLink).IsModified := False;
+      FKillFocus := False;
     end;
   end
   else
@@ -523,6 +523,7 @@ begin
   inherited Create(AOwner);
   FDataLink := TFieldDataLink.Create;
   FDataLink.Control := Self;
+  FKillFocus := False;
   FDataLink.OnDataChange := @DataChange;
   FDataLink.OnUpdateData := @UpdateData;
 end;
